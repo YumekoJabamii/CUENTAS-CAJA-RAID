@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAID — Panel de caja</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg-app:      #0e0e0c;
+  --bg-sidebar:  #141412;
+  --bg-main:     #1a1a18;
+  --bg-card:     #222220;
+  --bg-input:    #2a2a28;
+  --text-1:      #f0ede6;
+  --text-2:      #9e9b94;
+  --text-3:      #5c5b57;
+  --border:      rgba(255,255,255,0.07);
+  --border-md:   rgba(255,255,255,0.13);
+  --green:       #4ade80;
+  --green-dim:   rgba(74,222,128,0.12);
+  --red:         #f87171;
+  --red-dim:     rgba(248,113,113,0.12);
+  --amber:       #fbbf24;
+  --amber-dim:   rgba(251,191,36,0.12);
+  --blue:        #60a5fa;
+  --blue-dim:    rgba(96,165,250,0.12);
+  --radius-sm:   6px;
+  --radius-md:   9px;
+  --radius-lg:   12px;
+  --sidebar-w:   210px;
+}
+html, body { height: 100%; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg-app); color: var(--text-1); font-size: 14px; line-height: 1.5; display: flex; min-height: 100vh; }
+
+.sidebar { width: var(--sidebar-w); flex-shrink: 0; background: var(--bg-sidebar); border-right: 0.5px solid var(--border); display: flex; flex-direction: column; padding: 20px 12px; position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto; }
+.sidebar-logo { font-size: 17px; font-weight: 600; color: var(--text-1); letter-spacing: -0.3px; padding: 4px 10px 20px; border-bottom: 0.5px solid var(--border); margin-bottom: 12px; }
+.sidebar-logo span { font-size: 11px; font-weight: 400; color: var(--text-3); display: block; margin-top: 1px; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: var(--radius-md); font-size: 13px; color: var(--text-2); cursor: pointer; transition: all 0.12s; border: none; background: transparent; width: 100%; text-align: left; margin-bottom: 2px; }
+.nav-item i { font-size: 16px; flex-shrink: 0; }
+.nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text-1); }
+.nav-item.active { background: rgba(74,222,128,0.1); color: var(--green); }
+.nav-item.active i { color: var(--green); }
+.sidebar-footer { margin-top: auto; padding-top: 12px; border-top: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 4px; }
+.sidebar-btn { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: var(--radius-md); font-size: 12px; color: var(--text-2); cursor: pointer; background: transparent; border: none; width: 100%; text-align: left; transition: all 0.12s; }
+.sidebar-btn:hover { background: rgba(255,255,255,0.05); color: var(--text-1); }
+.sidebar-btn i { font-size: 15px; }
+.backup-indicator { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-3); padding: 6px 10px; margin-top: 4px; }
+.backup-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+
+.main { margin-left: var(--sidebar-w); flex: 1; background: var(--bg-main); min-height: 100vh; padding: 28px 32px 48px; max-width: 900px; }
+.view { display: none; }
+.view.active { display: block; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.topbar-title { font-size: 18px; font-weight: 500; color: var(--text-1); }
+.topbar-sub { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.month-nav { display: flex; align-items: center; gap: 8px; }
+.month-btn { width: 30px; height: 30px; border-radius: var(--radius-sm); border: 0.5px solid var(--border-md); background: transparent; color: var(--text-2); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all 0.12s; }
+.month-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-1); }
+
+.neto-card { background: var(--bg-card); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+.neto-main label { font-size: 11px; color: var(--text-3); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.neto-main .amount { font-size: 32px; font-weight: 500; color: var(--green); letter-spacing: -0.5px; }
+.neto-main .amount.neg { color: var(--red); }
+.neto-secondary { text-align: right; }
+.neto-secondary label { font-size: 11px; color: var(--text-3); display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.neto-secondary .amount { font-size: 20px; font-weight: 500; color: var(--red); }
+
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
+.stat { background: var(--bg-card); border: 0.5px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; }
+.stat label { font-size: 11px; color: var(--text-3); display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat .val { font-size: 18px; font-weight: 500; color: var(--text-1); }
+.val.green { color: var(--green); }
+.val.red   { color: var(--red); }
+
+.section-title { font-size: 10px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; margin: 20px 0 8px; }
+.cobros-list { background: var(--bg-card); border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; margin-bottom: 8px; }
+.cobro-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 0.5px solid var(--border); transition: background 0.1s; }
+.cobro-row:last-child { border-bottom: none; }
+.cobro-row.is-done { background: var(--green-dim); }
+.check-btn { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border-md); background: transparent; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent; transition: all 0.15s; }
+.check-btn:hover { border-color: var(--green); }
+.check-btn.done { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.check-btn.pending { border-color: var(--red); }
+.cobro-name { font-size: 14px; font-weight: 500; color: var(--text-1); }
+.cobro-sub  { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+.monto-pending { color: var(--red); font-weight: 500; font-size: 14px; }
+.monto-done    { color: var(--green); font-weight: 500; font-size: 14px; }
+.monto-ing     { color: var(--green); font-weight: 500; font-size: 14px; }
+
+.badge { display: inline-block; font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: var(--radius-sm); }
+.badge.green { background: var(--green-dim);  color: var(--green); }
+.badge.amber { background: var(--amber-dim);  color: var(--amber); }
+.badge.blue  { background: var(--blue-dim);   color: var(--blue);  }
+.badge.red   { background: var(--red-dim);    color: var(--red);   }
+
+.card { background: var(--bg-card); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 8px; }
+.client-meta { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 0.5px solid var(--border); }
+.client-meta-item label { font-size: 11px; color: var(--text-3); display: block; margin-bottom: 3px; }
+.client-meta-item span  { font-size: 13px; font-weight: 500; color: var(--text-1); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+
+input[type=text], input[type=number], input[type=month], select {
+  padding: 8px 11px; border: 0.5px solid var(--border-md); border-radius: var(--radius-sm);
+  background: var(--bg-input); color: var(--text-1); font-size: 13px; width: 100%;
+  transition: border-color 0.12s; outline: none;
+}
+input::placeholder { color: var(--text-3); }
+input:focus, select:focus { border-color: rgba(74,222,128,0.4); }
+select option { background: var(--bg-card); }
+input[type=month] { color-scheme: dark; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; background: rgba(255,255,255,0.06); border: 0.5px solid var(--border-md); color: var(--text-1); transition: all 0.12s; }
+.btn:hover { background: rgba(255,255,255,0.1); }
+.btn-danger { background: transparent; border: none; color: var(--text-3); cursor: pointer; padding: 4px 6px; border-radius: var(--radius-sm); font-size: 15px; display: flex; align-items: center; transition: all 0.12s; }
+.btn-danger:hover { color: var(--red); background: var(--red-dim); }
+.btn-edit { background: transparent; border: none; color: var(--text-3); cursor: pointer; padding: 4px 6px; border-radius: var(--radius-sm); font-size: 15px; display: flex; align-items: center; transition: all 0.12s; }
+.btn-edit:hover { color: var(--text-1); background: rgba(255,255,255,0.06); }
+
+.edit-form { display: none; margin-top: 12px; padding-top: 12px; border-top: 0.5px solid var(--border); }
+.edit-form.open { display: block; }
+.edit-form .form-grid { margin-bottom: 8px; }
+
+.divider { height: 0.5px; background: var(--border); margin: 20px 0; }
+.empty { padding: 20px; text-align: center; color: var(--text-3); font-size: 13px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.day-circle { width: 34px; height: 34px; border-radius: 50%; background: var(--bg-input); font-size: 12px; font-weight: 500; color: var(--text-2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.warning-text { font-size: 11px; color: var(--amber); margin-left: 6px; }
+
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border: 0.5px solid var(--border-md); border-radius: var(--radius-md); padding: 10px 16px; font-size: 13px; color: var(--text-2); display: flex; align-items: center; gap: 8px; opacity: 0; transform: translateY(8px); transition: all 0.2s ease; pointer-events: none; z-index: 999; }
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.warn { border-color: rgba(251,191,36,0.3); color: var(--amber); }
+.toast i { font-size: 15px; }
+
+/* Historico */
+.hist-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.hist-table th { text-align: left; font-size: 10px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; padding: 8px 12px; border-bottom: 0.5px solid var(--border); }
+.hist-table td { padding: 10px 12px; border-bottom: 0.5px solid var(--border); color: var(--text-1); }
+.hist-table tr:last-child td { border-bottom: none; }
+.hist-table tr:hover td { background: rgba(255,255,255,0.02); }
+.td-right { text-align: right; }
+.td-green { color: var(--green); font-weight: 500; }
+.td-red   { color: var(--red);   font-weight: 500; }
+
+.chart-wrap { background: var(--bg-card); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+.chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 140px; }
+.chart-bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; }
+.chart-bars-inner { display: flex; gap: 3px; align-items: flex-end; height: 120px; width: 100%; }
+.bar { border-radius: 3px 3px 0 0; min-height: 3px; transition: opacity 0.15s; cursor: default; }
+.bar:hover { opacity: 0.8; }
+.chart-label { font-size: 10px; color: var(--text-3); text-align: center; }
+.chart-legend { display: flex; gap: 16px; margin-top: 12px; }
+.chart-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2); }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">RAID<span>Panel de caja</span></div>
+  <button class="nav-item active" data-view="caja"><i class="ti ti-chart-bar"></i> Caja</button>
+  <button class="nav-item" data-view="clientes"><i class="ti ti-users"></i> Clientes</button>
+  <button class="nav-item" data-view="gastos"><i class="ti ti-receipt"></i> Gastos fijos</button>
+  <button class="nav-item" data-view="calendario"><i class="ti ti-calendar"></i> Calendario</button>
+  <button class="nav-item" data-view="historico"><i class="ti ti-timeline"></i> Histórico</button>
+  <div class="sidebar-footer">
+    <button class="sidebar-btn" id="btn-export"><i class="ti ti-download"></i> Exportar backup</button>
+    <button class="sidebar-btn" id="btn-export-excel"><i class="ti ti-file-spreadsheet"></i> Exportar a Excel</button>
+    <label class="sidebar-btn" style="cursor:pointer;"><i class="ti ti-upload"></i> Importar datos<input type="file" id="input-import" accept=".json" style="display:none;"></label>
+    <div class="backup-indicator"><div class="backup-dot" id="backup-dot"></div><span id="backup-label">Guardado</span></div>
+  </div>
+</aside>
+
+<div class="toast" id="toast"><i class="ti ti-device-floppy"></i><span id="toast-msg">Guardado</span></div>
+
+<main class="main">
+
+  <!-- CAJA -->
+  <div id="view-caja" class="view active">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="caja-mes-label"></div>
+        <div class="topbar-sub">Click en el círculo para confirmar cobros y pagos</div>
+      </div>
+      <div class="month-nav">
+        <button class="month-btn" id="mes-prev"><i class="ti ti-chevron-left"></i></button>
+        <button class="month-btn" id="mes-next"><i class="ti ti-chevron-right"></i></button>
+      </div>
+    </div>
+    <div class="neto-card">
+      <div class="neto-main"><label>Neto proyectado</label><div class="amount" id="neto-val">$0</div></div>
+      <div class="neto-secondary"><label>Pendiente de cobrar</label><div class="amount" id="pendiente-val">$0</div></div>
+    </div>
+    <div class="stat-grid" id="caja-stats"></div>
+    <p class="section-title">Ingresos del mes</p>
+    <div id="caja-ingresos"></div>
+    <p class="section-title">Gastos fijos</p>
+    <div id="caja-gastos"></div>
+    <p class="section-title">Únicos este mes</p>
+    <div id="caja-unicos"></div>
+    <div class="card" style="margin-top:6px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;align-items:flex-end;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <span style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;">Tipo</span>
+          <select id="u-tipo" style="width:130px;">
+            <option value="ingreso">Cobro único</option>
+            <option value="gasto">Gasto único</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:120px;display:flex;flex-direction:column;gap:4px;">
+          <span style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;">Concepto</span>
+          <input type="text" id="u-concepto" placeholder="Concepto">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <span style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;">Monto ARS</span>
+          <input type="number" id="u-monto" placeholder="Monto" style="width:120px;">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <span style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;">Mes</span>
+          <input type="month" id="u-mes" style="width:140px;">
+        </div>
+      </div>
+      <button class="btn" id="btn-agregar-unico"><i class="ti ti-plus"></i> Agregar único</button>
+    </div>
+  </div>
+
+  <!-- CLIENTES -->
+  <div id="view-clientes" class="view">
+    <div class="topbar"><div class="topbar-title">Clientes</div></div>
+    <div id="lista-clientes"></div>
+    <p class="section-title" style="margin-top:24px;">Agregar cliente</p>
+    <div class="card">
+      <div class="form-grid">
+        <input type="text"   id="c-nombre"   placeholder="Nombre del cliente">
+        <input type="text"   id="c-concepto" placeholder="Concepto (ej: soporte mensual)">
+        <input type="number" id="c-monto"    placeholder="Monto mensual (ARS)">
+        <input type="number" id="c-dia"      placeholder="Día de cobro (1-31)" min="1" max="31">
+      </div>
+      <div class="form-grid">
+        <select id="c-factura">
+          <option value="no">Sin factura</option>
+          <option value="si">Con factura requerida</option>
+        </select>
+        <select id="c-estado">
+          <option value="activo">Activo — soporte</option>
+          <option value="desarrollo">En desarrollo</option>
+          <option value="porCerrar">Por cerrar</option>
+        </select>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">Fecha de inicio (primer mes que aparece en caja)</div>
+        <input type="month" id="c-fecha-inicio" style="width:200px;">
+      </div>
+      <button class="btn" id="btn-agregar-cliente"><i class="ti ti-plus"></i> Agregar cliente</button>
+    </div>
+  </div>
+
+  <!-- GASTOS -->
+  <div id="view-gastos" class="view">
+    <div class="topbar"><div class="topbar-title">Gastos fijos</div></div>
+    <div class="cobros-list" id="lista-gastos"></div>
+    <p class="section-title" style="margin-top:20px;">Agregar gasto fijo</p>
+    <div class="card">
+      <div class="form-grid">
+        <input type="text"   id="g-nombre" placeholder="Nombre (ej: Claude Max)">
+        <input type="number" id="g-monto"  placeholder="Monto mensual (ARS)">
+      </div>
+      <button class="btn" id="btn-agregar-gasto"><i class="ti ti-plus"></i> Agregar gasto</button>
+    </div>
+  </div>
+
+  <!-- CALENDARIO -->
+  <div id="view-calendario" class="view">
+    <div class="topbar"><div class="topbar-title">Calendario de cobros</div></div>
+    <div id="lista-calendario"></div>
+  </div>
+
+  <!-- HISTORICO -->
+  <div id="view-historico" class="view">
+    <div class="topbar">
+      <div><div class="topbar-title">Histórico</div><div class="topbar-sub">Todos los meses desde el inicio de la empresa</div></div>
+    </div>
+    <div class="chart-wrap">
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:16px;">Ingresos vs gastos por mes</div>
+      <div class="chart-bars" id="hist-chart"></div>
+      <div class="chart-legend">
+        <div class="chart-legend-item"><div class="legend-dot" style="background:var(--green);"></div> Ingresos</div>
+        <div class="chart-legend-item"><div class="legend-dot" style="background:var(--red);"></div> Gastos</div>
+      </div>
+    </div>
+    <div class="cobros-list">
+      <table class="hist-table" id="hist-table">
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th class="td-right">Ingresos</th>
+            <th class="td-right">Gastos</th>
+            <th class="td-right">Únicos (+)</th>
+            <th class="td-right">Únicos (−)</th>
+            <th class="td-right">Neto</th>
+          </tr>
+        </thead>
+        <tbody id="hist-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+// ── Defaults con datos del backup ─────────────────────────────────────────────
+const DEFAULTS_CLIENTES = [
+  { id:1, nombre:"Salomon Sellam",  concepto:"Soporte mensual — cursos",      historial:[{monto:320000, desde:"2026-04"}], dia:3,    factura:"no", estado:"activo",     fechaInicio:"2026-04" },
+  { id:2, nombre:"Torrecillas",     concepto:"Soporte mensual",                historial:[{monto:160000, desde:"2026-03"}], dia:13,   factura:"si", estado:"activo",     fechaInicio:"2026-03" },
+  { id:3, nombre:"Basileus",        concepto:"Soporte mensual (post-entrega)", historial:[{monto:80000,  desde:"2026-04"}], dia:null, factura:"no", estado:"desarrollo", fechaInicio:"2026-04" },
+];
+const DEFAULTS_GASTOS = [
+  { id:1, nombre:"Claude Max", monto:120000 },
+  { id:2, nombre:"Claude Pro", monto:24000  },
+];
+const DEFAULTS_COBROS = {
+  "2_2026-4": true, "1_2026-4": true, "g1_2026-4": true, "g2_2026-4": true,
+  "2_2026-3": true, "g1_2026-3": true, "g2_2026-3": true, "u11_2026-3": true
+};
+const DEFAULTS_UNICOS = [
+  { id:11, tipo:"ingreso", concepto:"50% BASILEUS", monto:225000, key:"2026-3" }
+];
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const _hoy = new Date();
+let _mes  = _hoy.getMonth();
+let _year = _hoy.getFullYear();
+
+let _lastSaveTime = Date.now();
+let _toastTimer   = null;
+let _exportReminder = 0;
+
+let state = {
+  clientes: JSON.parse(localStorage.getItem('raid_clientes') || 'null') || DEFAULTS_CLIENTES,
+  gastos:   JSON.parse(localStorage.getItem('raid_gastos')   || 'null') || DEFAULTS_GASTOS,
+  cobros:   JSON.parse(localStorage.getItem('raid_cobros')   || 'null') || DEFAULTS_COBROS,
+  unicos:   JSON.parse(localStorage.getItem('raid_unicos')   || 'null') || DEFAULTS_UNICOS,
+  nextId:   parseInt(localStorage.getItem('raid_nextId')     || '12'),
+};
+
+// ── Migración: clientes viejos sin historial ──────────────────────────────────
+state.clientes.forEach(c => {
+  if (!c.historial) {
+    c.historial = c.monto ? [{ monto: c.monto, desde: c.fechaInicio || '2026-01' }] : [];
+  }
+});
+
+function save() {
+  localStorage.setItem('raid_clientes', JSON.stringify(state.clientes));
+  localStorage.setItem('raid_gastos',   JSON.stringify(state.gastos));
+  localStorage.setItem('raid_cobros',   JSON.stringify(state.cobros));
+  localStorage.setItem('raid_unicos',   JSON.stringify(state.unicos));
+  localStorage.setItem('raid_nextId',   state.nextId);
+  _lastSaveTime = Date.now();
+  updateBackupLabel();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmt(n)      { return '$' + Math.round(n).toLocaleString('es-AR'); }
+function mesKey(y,m) { return `${y}-${m}`; }  // m es 0-based (igual que JS)
+
+// CLAVE: fechaInicio usa formato "YYYY-MM" donde MM es 1-based (01=enero)
+// mesKey usa m 0-based. Necesitamos comparar correctamente.
+function clienteActivoEnMes(c, year, mes) {
+  // mes es 0-based aquí (0=enero)
+  if (!c.fechaInicio) return true;
+  const [iy, im] = c.fechaInicio.split('-').map(Number);
+  // im es 1-based en fechaInicio (04 = abril)
+  // convertir mes 0-based a 1-based para comparar
+  const mes1 = mes + 1;
+  return (year > iy) || (year === iy && mes1 >= im);
+}
+
+function montoEnMes(c, year, mes) {
+  // mes es 0-based
+  if (!c.historial || !c.historial.length) return c.monto || 0;
+  const mes1 = mes + 1;
+  const cmp = year * 100 + mes1;
+  const vigente = c.historial
+    .filter(h => { const [hy,hm] = h.desde.split('-').map(Number); return (hy*100+hm) <= cmp; })
+    .sort((a,b) => { const [ay,am]=a.desde.split('-').map(Number),[by,bm]=b.desde.split('-').map(Number); return (by*100+bm)-(ay*100+am); });
+  return vigente.length ? vigente[0].monto : 0;
+}
+
+function fmtFecha(fi) {
+  if (!fi) return '—';
+  const [y,m] = fi.split('-').map(Number);
+  return MESES_CORTO[m-1] + ' ' + y;
+}
+
+function renderHistorialLinea(c) {
+  if (!c.historial || !c.historial.length) return '—';
+  const sorted = [...c.historial].sort((a,b) => a.desde.localeCompare(b.desde));
+  return sorted.map((h, i) => {
+    const next = sorted[i+1];
+    const s = `${fmt(h.monto)} desde ${fmtFecha(h.desde)}`;
+    return `<span style="color:${next?'var(--text-3)':'var(--text-1)'}">${s}${next?' → ':''}</span>`;
+  }).join('');
+}
+
+function estadoBadge(e) {
+  const map = { activo:['green','Activo'], desarrollo:['amber','En desarrollo'], porCerrar:['blue','Por cerrar'] };
+  const [cls, txt] = map[e] || ['blue', e];
+  return `<span class="badge ${cls}">${txt}</span>`;
+}
+
+function getMes() { return { mes: _mes, year: _year, key: mesKey(_year, _mes) }; }
+
+function cambiarMes(d) {
+  _mes += d;
+  if (_mes > 11) { _mes = 0; _year++; }
+  if (_mes < 0)  { _mes = 11; _year--; }
+  renderCaja();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, warn) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = 'toast' + (warn ? ' warn' : '');
+  clearTimeout(_toastTimer);
+  requestAnimationFrame(() => {
+    t.classList.add('show');
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  });
+}
+
+function updateBackupLabel() {
+  const el = document.getElementById('backup-label');
+  const dot = document.getElementById('backup-dot');
+  const diff = Math.floor((Date.now() - _lastSaveTime) / 1000);
+  if (diff < 60) { el.textContent = 'Guardado hace ' + diff + 's'; dot.style.background = 'var(--green)'; }
+  else { const m = Math.floor(diff/60); el.textContent = 'Hace ' + m + ' min'; dot.style.background = diff > 120 ? 'var(--amber)' : 'var(--green)'; }
+}
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-' + btn.dataset.view).classList.add('active');
+    render();
+  });
+});
+document.getElementById('mes-prev').addEventListener('click', () => cambiarMes(-1));
+document.getElementById('mes-next').addEventListener('click', () => cambiarMes(1));
+
+// ── Set mes único default al mes actual ───────────────────────────────────────
+function setUMesDefault() {
+  const el = document.getElementById('u-mes');
+  if (el && !el.value) {
+    const { year, mes } = getMes();
+    el.value = `${year}-${String(mes+1).padStart(2,'0')}`;
+  }
+}
+
+// ── RENDER CAJA ───────────────────────────────────────────────────────────────
+function renderCaja() {
+  const { mes, year, key } = getMes();
+  document.getElementById('caja-mes-label').textContent = `${MESES[mes]} ${year}`;
+  setUMesDefault();
+
+  const activos = state.clientes.filter(c => c.estado === 'activo' && clienteActivoEnMes(c, year, mes) && montoEnMes(c, year, mes) > 0);
+  const totalIngEsp   = activos.reduce((a,c) => a + montoEnMes(c, year, mes), 0);
+  const totalIngCob   = activos.filter(c => state.cobros[`${c.id}_${key}`]).reduce((a,c) => a + montoEnMes(c, year, mes), 0);
+  const totalGas      = state.gastos.reduce((a,g) => a + g.monto, 0);
+  const unicosMes     = state.unicos.filter(u => u.key === key);
+  const totalUnicoIng = unicosMes.filter(u => u.tipo === 'ingreso').reduce((a,u) => a + u.monto, 0);
+  const totalUnicoGas = unicosMes.filter(u => u.tipo === 'gasto').reduce((a,u) => a + u.monto, 0);
+  const neto          = (totalIngEsp + totalUnicoIng) - (totalGas + totalUnicoGas);
+  const pendiente     = activos.filter(c => !state.cobros[`${c.id}_${key}`]).reduce((a,c) => a + montoEnMes(c, year, mes), 0);
+
+  const netoEl = document.getElementById('neto-val');
+  netoEl.textContent = fmt(neto);
+  netoEl.className = 'amount' + (neto < 0 ? ' neg' : '');
+  document.getElementById('pendiente-val').textContent = fmt(pendiente);
+
+  document.getElementById('caja-stats').innerHTML = `
+    <div class="stat"><label>Ingresos esperados</label><div class="val">${fmt(totalIngEsp + totalUnicoIng)}</div></div>
+    <div class="stat"><label>Cobrado</label><div class="val green">${fmt(totalIngCob)}</div></div>
+    <div class="stat"><label>Gastos fijos</label><div class="val red">${fmt(totalGas + totalUnicoGas)}</div></div>
+  `;
+
+  // Ingresos
+  const ingEl = document.getElementById('caja-ingresos');
+  if (!activos.length) {
+    ingEl.innerHTML = '<div class="empty">Sin clientes activos este mes.</div>';
+  } else {
+    ingEl.innerHTML = '<div class="cobros-list">' + activos.map(c => {
+      const k = `${c.id}_${key}`, done = !!state.cobros[k], monto = montoEnMes(c, year, mes);
+      const fac = c.factura === 'si' ? `<span class="warning-text"><i class="ti ti-file-text"></i> Factura req.</span>` : '';
+      return `<div class="cobro-row ${done?'is-done':''}">
+        <button class="check-btn ${done?'done':'pending'}" data-key="${k}">${done?'✓':''}</button>
+        <div style="flex:1;"><div class="cobro-name">${c.nombre}${fac}</div><div class="cobro-sub">${c.concepto} · ${c.dia?'Día '+c.dia:'Día a definir'}</div></div>
+        <span class="${done?'monto-done':'monto-pending'}">${fmt(monto)}</span>
+      </div>`;
+    }).join('') + '</div>';
+    ingEl.querySelectorAll('.check-btn').forEach(btn => btn.addEventListener('click', () => {
+      state.cobros[btn.dataset.key] = !state.cobros[btn.dataset.key]; save(); renderCaja();
+    }));
+  }
+
+  // Gastos
+  const gasEl = document.getElementById('caja-gastos');
+  if (!state.gastos.length) {
+    gasEl.innerHTML = '<div class="empty">Sin gastos fijos.</div>';
+  } else {
+    gasEl.innerHTML = '<div class="cobros-list">' + state.gastos.map(g => {
+      const k = `g${g.id}_${key}`, done = !!state.cobros[k];
+      return `<div class="cobro-row ${done?'is-done':''}">
+        <button class="check-btn ${done?'done':'pending'}" data-key="${k}">${done?'✓':''}</button>
+        <div style="flex:1;"><div class="cobro-name">${g.nombre}</div><div class="cobro-sub">Gasto fijo mensual</div></div>
+        <span class="${done?'monto-done':'monto-pending'}">${fmt(g.monto)}</span>
+      </div>`;
+    }).join('') + '</div>';
+    gasEl.querySelectorAll('.check-btn').forEach(btn => btn.addEventListener('click', () => {
+      state.cobros[btn.dataset.key] = !state.cobros[btn.dataset.key]; save(); renderCaja();
+    }));
+  }
+
+  // Únicos
+  const unicosEl = document.getElementById('caja-unicos');
+  if (!unicosMes.length) {
+    unicosEl.innerHTML = '<div class="empty">Sin cobros ni gastos únicos este mes.</div>';
+  } else {
+    unicosEl.innerHTML = '<div class="cobros-list">' + unicosMes.map(u => {
+      const k = `u${u.id}_${key}`, done = !!state.cobros[k], isIng = u.tipo === 'ingreso';
+      return `<div class="cobro-row ${done?'is-done':''}">
+        <button class="check-btn ${done?'done':'pending'}" data-key="${k}">${done?'✓':''}</button>
+        <div style="flex:1;"><div class="cobro-name">${u.concepto}</div><div class="cobro-sub">${isIng?'Cobro único':'Gasto único'} — solo este mes</div></div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="${isIng?'monto-ing':'monto-pending'}">${isIng?'+':'−'}${fmt(u.monto)}</span>
+          <button class="btn-danger unico-del" data-uid="${u.id}"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+    unicosEl.querySelectorAll('.check-btn').forEach(btn => btn.addEventListener('click', () => {
+      state.cobros[btn.dataset.key] = !state.cobros[btn.dataset.key]; save(); renderCaja();
+    }));
+    unicosEl.querySelectorAll('.unico-del').forEach(btn => btn.addEventListener('click', () => {
+      state.unicos = state.unicos.filter(u => u.id !== parseInt(btn.dataset.uid)); save(); renderCaja();
+    }));
+  }
+}
+
+// ── RENDER CLIENTES ───────────────────────────────────────────────────────────
+function renderClientes() {
+  const el = document.getElementById('lista-clientes');
+  if (!state.clientes.length) { el.innerHTML = '<div class="empty">Sin clientes todavía.</div>'; return; }
+  el.innerHTML = state.clientes.map(c => {
+    const montoActual = c.historial && c.historial.length
+      ? [...c.historial].sort((a,b) => b.desde.localeCompare(a.desde))[0].monto : (c.monto || 0);
+    return `<div class="card" data-cid="${c.id}">
+      <div class="row">
+        <div>
+          <div style="font-size:15px;font-weight:500;margin-bottom:4px;">${c.nombre}</div>
+          <div style="font-size:13px;color:var(--text-3);">${c.concepto}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          ${estadoBadge(c.estado)}
+          <button class="btn-edit btn-toggle-edit" data-id="${c.id}"><i class="ti ti-pencil"></i></button>
+          <button class="btn-danger btn-del-cliente" data-id="${c.id}"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      <div class="client-meta">
+        <div class="client-meta-item"><label>Monto actual</label><span>${fmt(montoActual)}</span></div>
+        <div class="client-meta-item"><label>Día de cobro</label><span>${c.dia ? 'Día '+c.dia : '—'}</span></div>
+        <div class="client-meta-item"><label>Factura</label><span>${c.factura==='si'?'Requerida':'No'}</span></div>
+        <div class="client-meta-item"><label>Desde</label><span>${fmtFecha(c.fechaInicio)}</span></div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);font-size:12px;line-height:1.8;">
+        <span style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;">Historial — </span>
+        ${renderHistorialLinea(c)}
+      </div>
+      <div class="edit-form" id="edit-form-${c.id}">
+        <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;">Editar datos generales</div>
+        <div class="form-grid">
+          <input type="text"   class="ef-nombre"   value="${c.nombre}"   placeholder="Nombre">
+          <input type="text"   class="ef-concepto" value="${c.concepto}" placeholder="Concepto">
+          <input type="number" class="ef-dia"      value="${c.dia||''}"  placeholder="Día de cobro" min="1" max="31">
+          <input type="month"  class="ef-fecha"    value="${c.fechaInicio||''}" style="width:100%;">
+        </div>
+        <div class="form-grid" style="margin-bottom:10px;">
+          <select class="ef-factura">
+            <option value="no" ${c.factura==='no'?'selected':''}>Sin factura</option>
+            <option value="si" ${c.factura==='si'?'selected':''}>Con factura requerida</option>
+          </select>
+          <select class="ef-estado">
+            <option value="activo"     ${c.estado==='activo'    ?'selected':''}>Activo — soporte</option>
+            <option value="desarrollo" ${c.estado==='desarrollo'?'selected':''}>En desarrollo</option>
+            <option value="porCerrar"  ${c.estado==='porCerrar' ?'selected':''}>Por cerrar</option>
+          </select>
+        </div>
+        <button class="btn btn-guardar-edit" data-id="${c.id}" style="margin-bottom:14px;"><i class="ti ti-check"></i> Guardar cambios</button>
+        <div style="border-top:0.5px solid var(--border);padding-top:12px;">
+          <div style="font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Registrar cambio de monto</div>
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div style="flex:1;min-width:120px;">
+              <div style="font-size:11px;color:var(--text-3);margin-bottom:4px;">Nuevo monto (ARS)</div>
+              <input type="number" class="ef-nuevo-monto" placeholder="ej: 350000">
+            </div>
+            <div style="flex:1;min-width:120px;">
+              <div style="font-size:11px;color:var(--text-3);margin-bottom:4px;">A partir de</div>
+              <input type="month" class="ef-nuevo-desde">
+            </div>
+            <button class="btn btn-agregar-monto" data-id="${c.id}"><i class="ti ti-plus"></i> Agregar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.querySelectorAll('.btn-toggle-edit').forEach(btn => btn.addEventListener('click', () => {
+    const form = document.getElementById('edit-form-' + btn.dataset.id);
+    form.classList.toggle('open');
+    btn.querySelector('i').className = form.classList.contains('open') ? 'ti ti-x' : 'ti ti-pencil';
+  }));
+  el.querySelectorAll('.btn-del-cliente').forEach(btn => btn.addEventListener('click', () => {
+    if (!confirm('¿Eliminar este cliente?')) return;
+    state.clientes = state.clientes.filter(c => c.id !== parseInt(btn.dataset.id)); save(); render();
+  }));
+  el.querySelectorAll('.btn-guardar-edit').forEach(btn => btn.addEventListener('click', () => {
+    const id = parseInt(btn.dataset.id), card = btn.closest('.card');
+    const idx = state.clientes.findIndex(c => c.id === id); if (idx === -1) return;
+    state.clientes[idx] = { ...state.clientes[idx],
+      nombre:      card.querySelector('.ef-nombre').value.trim()   || state.clientes[idx].nombre,
+      concepto:    card.querySelector('.ef-concepto').value.trim() || state.clientes[idx].concepto,
+      dia:         parseInt(card.querySelector('.ef-dia').value) || null,
+      factura:     card.querySelector('.ef-factura').value,
+      estado:      card.querySelector('.ef-estado').value,
+      fechaInicio: card.querySelector('.ef-fecha').value || null,
+    };
+    save(); render(); showToast('Cliente actualizado');
+  }));
+  el.querySelectorAll('.btn-agregar-monto').forEach(btn => btn.addEventListener('click', () => {
+    const id = parseInt(btn.dataset.id), card = btn.closest('.card');
+    const idx = state.clientes.findIndex(c => c.id === id); if (idx === -1) return;
+    const nuevoMonto = parseFloat(card.querySelector('.ef-nuevo-monto').value) || 0;
+    const nuevoDe    = card.querySelector('.ef-nuevo-desde').value;
+    if (!nuevoMonto || !nuevoDe) { showToast('Completá monto y fecha', true); return; }
+    if (!state.clientes[idx].historial) state.clientes[idx].historial = [];
+    const ya = state.clientes[idx].historial.findIndex(h => h.desde === nuevoDe);
+    if (ya >= 0) state.clientes[idx].historial[ya].monto = nuevoMonto;
+    else state.clientes[idx].historial.push({ monto: nuevoMonto, desde: nuevoDe });
+    save(); render(); showToast('Historial actualizado');
+  }));
+}
+
+// ── RENDER GASTOS ─────────────────────────────────────────────────────────────
+function renderGastos() {
+  const el = document.getElementById('lista-gastos');
+  if (!state.gastos.length) { el.innerHTML = '<div class="empty">Sin gastos fijos.</div>'; return; }
+  el.innerHTML = state.gastos.map(g => `
+    <div class="cobro-row">
+      <div style="flex:1;"><div class="cobro-name">${g.nombre}</div><div class="cobro-sub">Gasto fijo mensual</div></div>
+      <span style="font-weight:500;font-size:14px;">${fmt(g.monto)}</span>
+      <button class="btn-danger" data-id="${g.id}"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+  el.querySelectorAll('.btn-danger').forEach(btn => btn.addEventListener('click', () => {
+    state.gastos = state.gastos.filter(g => g.id !== parseInt(btn.dataset.id)); save(); render();
+  }));
+}
+
+// ── RENDER CALENDARIO ─────────────────────────────────────────────────────────
+function renderCalendario() {
+  const { mes, year } = getMes();
+  const el = document.getElementById('lista-calendario');
+  const conDia    = state.clientes.filter(c => c.dia && c.estado === 'activo' && clienteActivoEnMes(c, year, mes)).sort((a,b) => a.dia - b.dia);
+  const sinDia    = state.clientes.filter(c => !c.dia && c.estado === 'desarrollo' && clienteActivoEnMes(c, year, mes));
+  const porCerrar = state.clientes.filter(c => c.estado === 'porCerrar' && clienteActivoEnMes(c, year, mes));
+  let html = '';
+  if (conDia.length) {
+    html += '<div class="cobros-list" style="margin-bottom:8px;">';
+    conDia.forEach(c => {
+      const fac = c.factura === 'si' ? `<span class="warning-text"><i class="ti ti-file-text"></i> Emitir factura día ${c.dia-2}</span>` : '';
+      html += `<div class="cobro-row"><div class="day-circle">${c.dia}</div><div style="flex:1;"><div class="cobro-name">${c.nombre} ${fac}</div><div class="cobro-sub">${c.concepto}</div></div><span style="font-weight:500;">${fmt(montoEnMes(c,year,mes))}</span></div>`;
+    });
+    html += '</div>';
+  }
+  if (sinDia.length || porCerrar.length) {
+    html += '<p class="section-title" style="margin-top:16px;">Sin fecha fija</p><div class="cobros-list">';
+    [...sinDia, ...porCerrar].forEach(c => {
+      html += `<div class="cobro-row"><div class="day-circle" style="font-size:10px;">—</div><div style="flex:1;"><div class="cobro-name">${c.nombre} ${estadoBadge(c.estado)}</div><div class="cobro-sub">${c.concepto}</div></div><span style="font-weight:500;">${montoEnMes(c,year,mes)?fmt(montoEnMes(c,year,mes)):'—'}</span></div>`;
+    });
+    html += '</div>';
+  }
+  if (!html) html = '<div class="empty">Sin cobros este mes.</div>';
+  el.innerHTML = html;
+}
+
+// ── RENDER HISTÓRICO ──────────────────────────────────────────────────────────
+function buildHistoricoData() {
+  // Determinar rango: desde el primer mes con actividad hasta hoy
+  let minY = _hoy.getFullYear(), minM = _hoy.getMonth();
+  state.clientes.forEach(c => {
+    if (c.fechaInicio) { const [y,m] = c.fechaInicio.split('-').map(Number); if (y < minY || (y===minY && m-1 < minM)) { minY=y; minM=m-1; } }
+  });
+  state.unicos.forEach(u => {
+    const [y,m] = u.key.split('-').map(Number); if (y < minY || (y===minY && m < minM)) { minY=y; minM=m; }
+  });
+
+  const rows = [];
+  let cy = minY, cm = minM;
+  const endY = _hoy.getFullYear(), endM = _hoy.getMonth();
+  while (cy < endY || (cy === endY && cm <= endM)) {
+    const key = mesKey(cy, cm);
+    const activos = state.clientes.filter(c => c.estado === 'activo' && clienteActivoEnMes(c, cy, cm) && montoEnMes(c, cy, cm) > 0);
+    const ing     = activos.reduce((a,c) => a + montoEnMes(c, cy, cm), 0);
+    const gas     = state.gastos.reduce((a,g) => a + g.monto, 0);
+    const uMes    = state.unicos.filter(u => u.key === key);
+    const uIng    = uMes.filter(u => u.tipo==='ingreso').reduce((a,u)=>a+u.monto,0);
+    const uGas    = uMes.filter(u => u.tipo==='gasto').reduce((a,u)=>a+u.monto,0);
+    const neto    = (ing + uIng) - (gas + uGas);
+    rows.push({ label: MESES_CORTO[cm] + ' ' + cy, ing, gas, uIng, uGas, neto });
+    cm++; if (cm > 11) { cm = 0; cy++; }
+  }
+  return rows;
+}
+
+function renderHistorico() {
+  const rows = buildHistoricoData();
+  if (!rows.length) { document.getElementById('hist-chart').innerHTML = '<div class="empty">Sin datos.</div>'; document.getElementById('hist-tbody').innerHTML = ''; return; }
+
+  // Gráfico
+  const maxVal = Math.max(...rows.map(r => Math.max(r.ing + r.uIng, r.gas + r.uGas)), 1);
+  const recent = rows.slice(-12);
+  document.getElementById('hist-chart').innerHTML = recent.map(r => {
+    const ingH = Math.round(((r.ing + r.uIng) / maxVal) * 110);
+    const gasH = Math.round(((r.gas + r.uGas) / maxVal) * 110);
+    return `<div class="chart-bar-group">
+      <div class="chart-bars-inner">
+        <div class="bar" style="flex:1;background:var(--green);height:${ingH}px;" title="${r.label}: ${fmt(r.ing+r.uIng)}"></div>
+        <div class="bar" style="flex:1;background:var(--red);height:${gasH}px;" title="${r.label}: ${fmt(r.gas+r.uGas)}"></div>
+      </div>
+      <div class="chart-label">${r.label}</div>
+    </div>`;
+  }).join('');
+
+  // Tabla
+  document.getElementById('hist-tbody').innerHTML = [...rows].reverse().map(r => {
+    const netoClass = r.neto >= 0 ? 'td-green' : 'td-red';
+    return `<tr>
+      <td>${r.label}</td>
+      <td class="td-right td-green">${fmt(r.ing)}</td>
+      <td class="td-right td-red">${fmt(r.gas)}</td>
+      <td class="td-right" style="color:var(--text-2);">${r.uIng ? '+'+fmt(r.uIng) : '—'}</td>
+      <td class="td-right" style="color:var(--text-2);">${r.uGas ? '−'+fmt(r.uGas) : '—'}</td>
+      <td class="td-right ${netoClass}">${fmt(r.neto)}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── AGREGAR ÚNICO ─────────────────────────────────────────────────────────────
+document.getElementById('btn-agregar-unico').addEventListener('click', () => {
+  const tipo     = document.getElementById('u-tipo').value;
+  const concepto = document.getElementById('u-concepto').value.trim();
+  const monto    = parseFloat(document.getElementById('u-monto').value) || 0;
+  const mesVal   = document.getElementById('u-mes').value; // "YYYY-MM" 1-based
+  if (!concepto || !monto || !mesVal) { showToast('Completá todos los campos', true); return; }
+  const [uy, um1] = mesVal.split('-').map(Number);
+  const key = mesKey(uy, um1 - 1); // convertir a 0-based para key
+  state.unicos.push({ id: state.nextId++, tipo, concepto, monto, key });
+  save();
+  // Si el único es del mes actual en pantalla, re-render caja
+  const { key: currentKey } = getMes();
+  if (key === currentKey) renderCaja(); else render();
+  document.getElementById('u-concepto').value = '';
+  document.getElementById('u-monto').value    = '';
+  showToast('Único agregado');
+});
+
+// ── AGREGAR CLIENTE ───────────────────────────────────────────────────────────
+document.getElementById('btn-agregar-cliente').addEventListener('click', () => {
+  const nombre      = document.getElementById('c-nombre').value.trim();
+  const concepto    = document.getElementById('c-concepto').value.trim();
+  const monto       = parseFloat(document.getElementById('c-monto').value) || 0;
+  const dia         = parseInt(document.getElementById('c-dia').value) || null;
+  const factura     = document.getElementById('c-factura').value;
+  const estado      = document.getElementById('c-estado').value;
+  const fechaInicio = document.getElementById('c-fecha-inicio').value || null;
+  if (!nombre) return;
+  const desde = fechaInicio || new Date().toISOString().slice(0,7);
+  const historial = monto ? [{ monto, desde }] : [];
+  state.clientes.push({ id: state.nextId++, nombre, concepto, historial, dia, factura, estado, fechaInicio });
+  save(); render();
+  ['c-nombre','c-concepto','c-monto','c-dia','c-fecha-inicio'].forEach(id => document.getElementById(id).value = '');
+});
+
+// ── AGREGAR GASTO ─────────────────────────────────────────────────────────────
+document.getElementById('btn-agregar-gasto').addEventListener('click', () => {
+  const nombre = document.getElementById('g-nombre').value.trim();
+  const monto  = parseFloat(document.getElementById('g-monto').value) || 0;
+  if (!nombre || !monto) return;
+  state.gastos.push({ id: state.nextId++, nombre, monto });
+  save(); render();
+  document.getElementById('g-nombre').value = '';
+  document.getElementById('g-monto').value  = '';
+});
+
+// ── EXPORTAR BACKUP ───────────────────────────────────────────────────────────
+document.getElementById('btn-export').addEventListener('click', () => {
+  const data = { clientes: state.clientes, gastos: state.gastos, cobros: state.cobros, unicos: state.unicos, nextId: state.nextId, exportado: new Date().toISOString() };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
+  a.download = `raid-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast('Backup exportado');
+});
+
+// ── IMPORTAR ──────────────────────────────────────────────────────────────────
+document.getElementById('input-import').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!data.clientes || !data.gastos) { alert('Archivo inválido.'); return; }
+      if (!confirm('Esto reemplaza todos los datos actuales. ¿Continuar?')) return;
+      state.clientes = data.clientes || [];
+      state.gastos   = data.gastos   || [];
+      state.cobros   = data.cobros   || {};
+      state.unicos   = data.unicos   || [];
+      state.nextId   = data.nextId   || 10;
+      // Migrar clientes sin historial
+      state.clientes.forEach(c => {
+        if (!c.historial) c.historial = c.monto ? [{ monto: c.monto, desde: c.fechaInicio || '2026-01' }] : [];
+      });
+      save(); render();
+      showToast('Datos restaurados');
+    } catch(err) { alert('Error al leer el archivo.'); }
+  };
+  reader.readAsText(file); e.target.value = '';
+});
+
+// ── EXPORTAR EXCEL ────────────────────────────────────────────────────────────
+document.getElementById('btn-export-excel').addEventListener('click', () => {
+  if (typeof XLSX === 'undefined') { showToast('Cargando librería, intentá de nuevo', true); return; }
+  const wb = XLSX.utils.book_new();
+
+  // Clientes
+  const cData = [['Cliente','Concepto','Monto actual','Día de cobro','Factura','Estado','Desde']];
+  state.clientes.forEach(c => {
+    const ma = c.historial && c.historial.length ? [...c.historial].sort((a,b)=>b.desde.localeCompare(a.desde))[0].monto : (c.monto||0);
+    cData.push([c.nombre, c.concepto, ma, c.dia?'Día '+c.dia:'—', c.factura==='si'?'Sí':'No', {activo:'Activo',desarrollo:'En desarrollo',porCerrar:'Por cerrar'}[c.estado]||c.estado, fmtFecha(c.fechaInicio)]);
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet(cData);
+  ws1['!cols'] = [{wch:22},{wch:30},{wch:16},{wch:13},{wch:10},{wch:16},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Clientes');
+
+  // Historial de montos
+  const hData = [['Cliente','Monto','Desde']];
+  state.clientes.forEach(c => {
+    if (c.historial) [...c.historial].sort((a,b)=>a.desde.localeCompare(b.desde)).forEach(h => hData.push([c.nombre, h.monto, fmtFecha(h.desde)]));
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet(hData);
+  ws2['!cols'] = [{wch:22},{wch:16},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Historial montos');
+
+  // Gastos
+  const gData = [['Servicio','Monto mensual']];
+  state.gastos.forEach(g => gData.push([g.nombre, g.monto]));
+  gData.push(['',''],['Total', state.gastos.reduce((a,g)=>a+g.monto,0)]);
+  const ws3 = XLSX.utils.aoa_to_sheet(gData);
+  ws3['!cols'] = [{wch:24},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Gastos fijos');
+
+  // Histórico mensual
+  const rows = buildHistoricoData();
+  const hMData = [['Mes','Ingresos','Gastos','Únicos ingreso','Únicos gasto','Neto']];
+  rows.forEach(r => hMData.push([r.label, r.ing, r.gas, r.uIng||0, r.uGas||0, r.neto]));
+  const ws4 = XLSX.utils.aoa_to_sheet(hMData);
+  ws4['!cols'] = [{wch:14},{wch:16},{wch:14},{wch:16},{wch:14},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws4, 'Histórico mensual');
+
+  // Únicos
+  const uData = [['Mes','Tipo','Concepto','Monto']];
+  state.unicos.forEach(u => {
+    const [uy,um] = u.key.split('-').map(Number);
+    uData.push([MESES_CORTO[um] + ' ' + uy, u.tipo==='ingreso'?'Cobro único':'Gasto único', u.concepto, u.monto]);
+  });
+  if (uData.length===1) uData.push(['Sin registros','','','']);
+  const ws5 = XLSX.utils.aoa_to_sheet(uData);
+  ws5['!cols'] = [{wch:14},{wch:14},{wch:28},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws5, 'Únicos');
+
+  XLSX.writeFile(wb, `RAID-${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast('Excel exportado');
+});
+
+// ── Auto-guardado ─────────────────────────────────────────────────────────────
+setInterval(() => { save(); showToast('Guardado automático'); }, 60000);
+setInterval(updateBackupLabel, 10000);
+setInterval(() => { _exportReminder++; if (_exportReminder >= 30) { _exportReminder = 0; showToast('Acordate de exportar un backup manual', true); } }, 60000);
+
+// ── Render global ─────────────────────────────────────────────────────────────
+function render() { renderCaja(); renderClientes(); renderGastos(); renderCalendario(); renderHistorico(); }
+render();
+</script>
+</body>
+</html>
